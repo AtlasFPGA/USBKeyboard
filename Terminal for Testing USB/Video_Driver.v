@@ -1,6 +1,6 @@
 // Text video driver
 // http://tinyvga.com/vga-timing/640x480@60Hz
-// Antonio Sánchez (@TheSonders)
+// Antonio SÃ¡nchez (@TheSonders)
 
 // Data for 640x480@60Hz 25.175MHz pixel clock
 
@@ -58,11 +58,10 @@ reg [15:0] v_ram [1199:0];
  initial 
 	$readmemh ("video_ram.txt",v_ram);
 
-
 wire VisibleArea;
 wire [11:0] Color;
 wire Pixel,Blink;
-wire [15:0]RamReg;
+reg [15:0]RamReg=0;
 
 assign VisibleArea=((HCounter<`XVisible)&(VCounter<`YVisible))?1:0;
 assign Red=(VisibleArea)?Color[11:8]:0;
@@ -70,7 +69,6 @@ assign Green=(VisibleArea)?Color[7:4]:0;
 assign Blue=(VisibleArea)?Color[3:0]:0;
 
 assign RamPos=((VCounter>>4)*40)+(HCounter>>4);
-assign RamReg= v_ram[RamPos];
 assign Blink=(BlinkCounter<`BlinkDuty)?1:0;
 
 assign Pixel=((font[(RamReg[7:0])*16+(VCounter & 4'hF)] & (2<<(HCounter & 4'Hf)))>0)
@@ -100,6 +98,7 @@ end
 always @(negedge sys_clk) begin
 	if (we) v_ram[mem_addr]<=mem_data;
 	else ret_data<=v_ram[mem_addr];
+    RamReg<= v_ram[RamPos];
 end
 endmodule
 
