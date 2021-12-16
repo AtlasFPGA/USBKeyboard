@@ -2,7 +2,7 @@
 /*
 MIT License
 
-Copyright (c) 2021 Antonio Sï¿½nchez (@TheSonders)
+Copyright (c) 2021 Antonio Sánchez (@TheSonders)
 THE EXPERIMENT GROUP (@agnuca @Nabateo @subcriticalia)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -24,25 +24,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
  USB Layer 1
- Versiï¿½n reducida pero funcional de la interfaz de teclado USB
- -No realiza comprobaciï¿½n del CRC
- -Soporta sï¿½lo Low Speed devices 1.5Mpbs
- -Paquetes de transmisiï¿½n precalculados
+ Versión reducida pero funcional de la interfaz de teclado USB
+ -No realiza comprobación del CRC
+ -Soporta sólo Low Speed devices 1.5Mpbs
+ -Paquetes de transmisión precalculados
  
  USB Layer 2
- Se ha aï¿½adido la actualizaciï¿½n de los LEDs de teclado
+ Se ha añadido la actualización de los LEDs de teclado
  -Scroll Lock, Num Lock y Caps Lock
- -Aï¿½adido bit stuff en la transmisiï¿½n
- -Ampliada la mï¿½quina de estados de la capa superior.
- -Aï¿½adida funciï¿½n de espera y retry.
- -Aï¿½adidas macros para facilitar el cambio de frecuencia de reloj.
+ -Añadido bit stuff en la transmisión
+ -Ampliada la máquina de estados de la capa superior.
+ -Añadida función de espera y retry.
+ -Añadidas macros para facilitar el cambio de frecuencia de reloj.
  
- Este mï¿½dulo recibe y maneja directamente las lï¿½neas de transmisiï¿½n USB.
- La seï¿½al de reloj recomendada es de 48MHz
- Entrega una seï¿½al que indica si hay un dispositivo conectado y reconocido
- Ademï¿½s de un byte con las teclas 8 modificadoras (Alt-WIN-Ctrl-Shift)
+ Este módulo recibe y maneja directamente las líneas de transmisión USB.
+ La señal de reloj recomendada es de 48MHz
+ Entrega una señal que indica si hay un dispositivo conectado y reconocido
+ Además de un byte con las teclas 8 modificadoras (Alt-WIN-Ctrl-Shift)
  Y 6 bytes con las teclas pulsadas
- Antonio Sï¿½nchez (@TheSonders)
+ Antonio Sánchez (@TheSonders)
  Referencias:
  -Ben Eater Youtube Video:
      https://www.youtube.com/watch?v=wdgULBpRoXk
@@ -83,7 +83,7 @@ SOFTWARE.
 `define LineAsInput     0
 `define LineAsOutput    1
 
-module USB_L2
+module USB_L2 
     (input wire clk,
     input wire LedNum,
     input wire LedCaps,
@@ -114,10 +114,10 @@ reg IO=`LineAsInput;
 ////////////////////////////////////////////////////////////
 //                     SYNC LAYER                         //
 ////////////////////////////////////////////////////////////
-// Esta capa recibe directamente los datos de las lï¿½neas.
+// Esta capa recibe directamente los datos de las líneas.
 // Determina la velocidad del device y
-// se sincroniza con los flancos en las lï¿½neas de datos
-// Entrega a la capa superior los sï¿½mbolos ya muestreados
+// se sincroniza con los flancos en las líneas de datos
+// Entrega a la capa superior los símbolos ya muestreados
 ////////////////////////////////////////////////////////////
 reg [$clog2(`PRES_LowSpeed)-1:0]Prescaler_Reload=0;
 reg [$clog2(`PRES_LowSpeed)-1:0]RX_Prescaler=0;
@@ -169,10 +169,10 @@ end
 ////////////////////////////////////////////////////////////
 //                    SYMBOL LAYER                        //
 ////////////////////////////////////////////////////////////
-// Esta capa recibe los cuatro sï¿½mbolos ya muestrados.
+// Esta capa recibe los cuatro símbolos ya muestrados.
 // Recorta las tramas SYNC, SOP y EOP y filtra el bit stuff.
 // Entrega a la capa superior los bits equivalentes 
-// del payload, y las seï¿½ales Start of Packet y End of Packet
+// del payload, y las señales Start of Packet y End of Packet
 ////////////////////////////////////////////////////////////
 reg [1:0]Prev_SYM=0;
 reg [1:0]Prev_Prev_SYM=0;
@@ -249,7 +249,7 @@ end
 //                    DECODE LAYER                        //
 ////////////////////////////////////////////////////////////
 // Esta capa recibe los bits del payload y
-// las seï¿½ales SOP y EOP.
+// las señales SOP y EOP.
 // Decodifica los paquetes y calcula el CRC.
 ////////////////////////////////////////////////////////////
 `define PID_Out         8'hE1
@@ -315,12 +315,12 @@ end
 ////////////////////////////////////////////////////////////
 //                      TOP LAYER                         //
 ////////////////////////////////////////////////////////////
-// Mï¿½quina de estados general.
+// Máquina de estados general.
 // -Detectar la presencia de un device y determinar su velocidad.
 // -Reiniciar el Device
-// -Setup de la direcciï¿½n del device
+// -Setup de la dirección del device
 // -Forzar el device a modo BOOT
-// -Solicitar (paquete IN) periï¿½dicamente el estado de las teclas
+// -Solicitar (paquete IN) periódicamente el estado de las teclas
 // -Un device en modo BOOT devuelve NAK si dicho estado no ha cambiado
 // 
 ////////////////////////////////////////////////////////////
@@ -355,6 +355,7 @@ end
 `define TL_SEND_ACK_DATA1      23
 `define TL_Wait                24
 `define TL_DelayRetry          25
+`define TL_KeepAlive2          26
 
 `define LEDS    {LedScroll,LedCaps,LedNum}
 
@@ -388,19 +389,20 @@ reg [95:0]Packet_ACK = {`PID_ACK};
 
 reg [8:0] TXLeftBits=0;
 reg MACHINE_RESET=0;
-reg [2:0]TimeOut=0;
+reg [3:0]TimeOut=0;
 reg [2:0]LatchLEDS=0;
 reg [2:0]Stuff_Count=0;
 
 always @(posedge clk)begin
     if (StartTimer==1) StartTimer<=0;
     if (MACHINE_RESET==1) MACHINE_RESET<=0;
-    if (TXLeftBits==0 && (TimerEnd==1 || NewInPacket==1))begin
+    if (MACHINE_RESET==0 && TXLeftBits==0 && (TimerEnd==1 || NewInPacket==1))begin
     case (TL_STM)
         `TL_Unconnected:begin ListenIfConnected:
             IO<=`LineAsInput;
             Device_Connected<=0;
             TimeOut<=0;
+            LatchLEDS<=0;
             if (INSYNC_STM==`STM_Idle)begin
                 TL_STM<=`TL_Reset;
                 IO<=`LineAsOutput;
@@ -409,7 +411,7 @@ always @(posedge clk)begin
         `TL_Reset:begin SendRESETToDevice:
                 SendReset;
                 TL_STM<=`TL_SendSETUPAddress;
-                SetTimer(10);
+                SetTimer(20);
         end
         `TL_Wait: begin
                 IO<=`LineAsInput;
@@ -422,13 +424,13 @@ always @(posedge clk)begin
         `TL_WaitResponse: begin
             if (TimerEnd==1 || 
                 (TL_Fail!=`TL_IN21 && RECEIVED_PID !=`PID_ACK && RECEIVED_PID!=`PID_Data1))begin
-                if (TimeOut==7) begin
+                if (TimeOut==15) begin
                     TL_STM<=`TL_Unconnected;
                     MACHINE_RESET<=1;
                 end
                 else begin
                     TimeOut<=TimeOut+1;
-                    SetTimer(2);
+                    SetTimer(1);
                     TL_STM<=`TL_DelayRetry;
                 end
             end
@@ -501,7 +503,7 @@ always @(posedge clk)begin
         `TL_IN20_REPORT:begin
                 SendPacket(Packet_IN20,24);
                 SetTimer(0);
-                Wait_Response(`TL_SEND_OUT20_REPORT,`TL_SEND_ACK_DATA1);
+                Wait_Response(`TL_IN20_REPORT,`TL_SEND_ACK_DATA1);
         end
         `TL_IN20_CONFIG,`TL_IN20_PROTOCOL: begin
             SendPacket(Packet_IN20,24);
@@ -527,13 +529,18 @@ always @(posedge clk)begin
                 SetTimer(0);
             end
             else begin
-                TL_STM<=`TL_IN21;
+                TL_STM<=`TL_KeepAlive2;
                 SendKeepAlive;
-                SetTimer(2);
+                SetTimer(1);
             end
         end
+        `TL_KeepAlive2:begin
+            TL_STM<=`TL_IN21;
+            SendKeepAlive;
+            SetTimer(1);  
+        end
         `TL_VerifyData: begin
-                SetTimer(2); 
+                SetTimer(1); 
                 TL_STM<=`TL_KeepAlive;
                 if (RECEIVED_PID==`PID_Data0 || RECEIVED_PID==`PID_Data1) begin
                     SendPacket(Packet_ACK,8);
