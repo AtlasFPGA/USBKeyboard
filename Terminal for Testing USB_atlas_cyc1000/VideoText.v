@@ -4,8 +4,10 @@
 
 module VideoText(
 	input wire  sys_clk,
-	inout wire  dp,
-    inout wire  dm,
+	inout wire  DP,
+    inout wire  DM,
+    output wire PDP_4k7,
+    output wire PDM_4k7,
     
     output wire LED_1,
     output wire LED_2,
@@ -22,6 +24,8 @@ wire [1:0] VGA_Red;
 wire [1:0] VGA_Green;
 wire [1:0] VGA_Blue;
 
+assign PDP_4k7=1'b0;
+assign PDM_4k7=1'b0;
 
 wire NewKey;
 wire [7:0] Result;
@@ -83,8 +87,8 @@ USB_L2 USB_inst (
     .LedNum(LedNum),
     .LedCaps(LedCaps),
     .LedScroll(LedScroll),
-    .dp(dp),
-    .dm(dm),
+    .dp(DP),
+    .dm(DM),
     .Rmodifiers(R0),
     .R0(R2),
     .Device_Connected(Device_Connected));

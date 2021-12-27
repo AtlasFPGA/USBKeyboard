@@ -5,8 +5,10 @@
 
 module VideoText_PS2(
 	input wire  sys_clk,
-	inout wire  dp,
-    inout wire  dm,
+	inout wire  DP,
+    inout wire  DM,
+    output wire PDP_4k7,
+    output wire PDM_4k7,
     
     output wire LED_1,
     output wire LED_2,
@@ -20,11 +22,13 @@ module VideoText_PS2(
 wire VSync;
 wire HSync;
 wire vga_blank;
-reg  VGA_CLK;
+wire  VGA_CLK;
 wire [1:0] VGA_Red;
 wire [1:0] VGA_Green;
 wire [1:0] VGA_Blue;
 
+assign PDP_4k7=1'b0;
+assign PDM_4k7=1'b0;
 
 wire NewKey;
 wire [7:0] Result;
@@ -39,7 +43,7 @@ wire Device_Connected;
 assign LED_2=1'b0;
 assign LED_1=1'b1;
 
-always @(posedge clk50) VGA_CLK<=~VGA_CLK;
+//always @(posedge clk50) VGA_CLK<=~VGA_CLK;
 
 pll PLL_inst(
     .inclk0(sys_clk),
@@ -49,7 +53,7 @@ pll PLL_inst(
 
 pll2 PLL2_inst(
     .inclk0(sys_clk),
-//    .c0(VGA_CLK),    
+    .c0(VGA_CLK),    
     .c1(clock_dvi_s)
     );   
 
@@ -58,20 +62,20 @@ USB_PS2 USB (
     .LedNum(0), 
     .LedCaps(0), 
     .LedScroll(0), 
-    .dp(dp), 
-    .dm(dm), 
+    .dp(DP), 
+    .dm(DM), 
     .PS2data(PS2data), 
     .PS2clock(PS2clock));
        
 PS2ASCII PS2ASCII (
-    .sys_clk(clk50), 
+    .sys_clk(clk50),        
     .PS2Clk(PS2clock), 
     .PS2Data(PS2data), 
     .Result(Result), 
     .NewKey(NewKey));    
 
 Text_Editor Editor_inst (
-	.sys_clk(clk50),
+	.sys_clk(clk50),       
 	.NewKey(NewKey),
 	.Ascii(Result),
 	.mem_addr(mem_addr),
@@ -80,7 +84,7 @@ Text_Editor Editor_inst (
 	.ret_data(ret_data));	 
 	 
 Video_Driver Video_inst (
-	.sys_clk(clk50),         //clk50
+	.sys_clk(clk50),         
 	.we(we),
 	.mem_addr(mem_addr),
 	.mem_data(mem_data),
